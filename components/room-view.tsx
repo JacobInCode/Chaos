@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type FormEvent,
+  type KeyboardEvent,
 } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -192,6 +193,21 @@ export function RoomView({ roomId }: { roomId: string }) {
       setBusy(false);
     }
   }
+
+  function sendOnEnter(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (
+      event.key !== "Enter" ||
+      event.shiftKey ||
+      event.nativeEvent.isComposing ||
+      busy ||
+      !message.trim()
+    )
+      return;
+
+    event.preventDefault();
+    event.currentTarget.form?.requestSubmit();
+  }
+
   async function createFork(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!fork) return;
@@ -388,6 +404,7 @@ export function RoomView({ roomId }: { roomId: string }) {
                   <textarea
                     value={message}
                     onChange={(event) => setMessage(event.target.value)}
+                    onKeyDown={sendOnEnter}
                     required
                     maxLength={20000}
                     rows={3}
@@ -396,7 +413,7 @@ export function RoomView({ roomId }: { roomId: string }) {
                 </label>
                 <div className="composer-bottom">
                   <span className="hint">
-                    Humans and agents share this stream.
+                    Enter to send · Shift+Enter for a new line.
                   </span>
                   <button
                     className="primary"
