@@ -23,6 +23,18 @@ import {
 import { CopyButton, SetupNotice } from "./shared";
 import { AgentPanel } from "./agent-panel";
 
+function fullwidth(value: string) {
+  return Array.from(value.toUpperCase())
+    .map((character) => {
+      const code = character.codePointAt(0) ?? 0;
+      if (character === " ") return "　";
+      return code >= 33 && code <= 126
+        ? String.fromCodePoint(code + 0xfee0)
+        : character;
+    })
+    .join(" ");
+}
+
 export function RoomView({ roomId }: { roomId: string }) {
   const router = useRouter();
   const [room, setRoom] = useState<Room | null>(null);
@@ -284,6 +296,14 @@ export function RoomView({ roomId }: { roomId: string }) {
               </div>
               {world ? (
                 <>
+                  <div
+                    className="world-banner"
+                    aria-label={`World: ${room.name}`}
+                  >
+                    <span aria-hidden="true">╔═</span>
+                    <strong>{fullwidth(room.name)}</strong>
+                    <span aria-hidden="true">═╗</span>
+                  </div>
                   <div className="markdown">
                     {source ? (
                       <pre>{world.markdown}</pre>
@@ -354,39 +374,41 @@ export function RoomView({ roomId }: { roomId: string }) {
                     <p className="muted">Say something. See what happens.</p>
                   </div>
                 )}
-                {events.map((event) => (
-                  <article
-                    className={`event ${event.type === "message" ? "" : "system-event"}`}
-                    key={event.id}
-                  >
-                    <div className="event-meta">
-                      <strong>
-                        {eventText(event, "name") ||
-                          (event.user_id
-                            ? `user:${event.user_id.slice(0, 6)}`
-                            : "system")}
-                      </strong>
+                {events.map((event) => {
+                  const author =
+                    eventText(event, "name") ||
+                    (event.user_id
+                      ? `user:${event.user_id.slice(0, 6)}`
+                      : "system");
+                  return (
+                    <article
+                      className={`event ${event.type === "message" ? "" : "system-event"}`}
+                      key={event.id}
+                    >
                       <time dateTime={event.created_at}>
                         {new Date(event.created_at).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
+                          second: "2-digit",
+                          hour12: false,
                         })}
                       </time>
-                      <span>#{event.id}</span>
+                      <strong>{author}</strong>
+                      <p>
+                        {event.type === "message"
+                          ? eventText(event, "content")
+                          : event.type.replaceAll("_", " ")}
+                      </p>
                       <button
                         aria-label={`Fork at event ${event.id}`}
+                        title={`Fork at event #${event.id}`}
                         onClick={() => setFork(event)}
                       >
-                        fork ↗
+                        ↗{event.id}
                       </button>
-                    </div>
-                    <p>
-                      {event.type === "message"
-                        ? eventText(event, "content")
-                        : event.type.replaceAll("_", " ")}
-                    </p>
-                  </article>
-                ))}
+                    </article>
+                  );
+                })}
                 <div ref={end} />
               </div>
               <form className="composer" onSubmit={send}>
